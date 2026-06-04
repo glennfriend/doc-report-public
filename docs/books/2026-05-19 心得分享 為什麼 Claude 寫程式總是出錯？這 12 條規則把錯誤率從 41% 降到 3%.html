@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Claude 寫程式 12 條規則：錯誤率 41% 降到 3%</title>
+    <link rel="stylesheet" href="../dist/youtube-view/app.css">
+  </head>
+  <body>
+    <main class="page" data-youtube-sync-app></main>
+
+    <script>
+      window.YOUTUBE_SYNC_CONFIG = {
+        title: "為什麼 Claude 寫程式總是出錯？這 12 條規則把錯誤率從 41% 降到 3%｜CLAUDE.md 完整模板",
+        updatedAt: "2026-05-19",
+        videoUrl: "https://www.youtube.com/watch?v=lKnipyn8gvs",
+        videoId: "lKnipyn8gvs",
+        tags: ["AI", "Claude-Code", "CLAUDE.md", "Karpathy", "prompt-engineering", "agent-loop", "錯誤率", "規則模板"],
+        summary: "CLAUDE.md 是放在專案根目錄的純文字指令檔，告訴 Claude Code 如何在該 codebase 工作。Karpathy 原版 4 條規則把錯誤率從 41% 降到 11%；@mnilax 擴充至 12 條後再降至 3%，且遵從率僅微降（80% → 76%）。關鍵限制：超過 200 行效果急劇下降，超過 14 條規則遵從率從 76% 掉到 52%",
+        timeline: [
+          { time: "00:37", seconds: 37, text: "核心數據：無規則 → 41% 錯誤率；Karpathy 4 條 → 11%；加上 @mnilax 8 條 → 3%" },
+          { time: "01:02", seconds: 62, text: "起源：2026 年 1 月 Karpathy 在 X 上抱怨 Claude 三大問題 — 靜默假設、過度複雜化、破壞不該碰的程式碼" },
+          { time: "01:18", seconds: 78, text: "Forrest Chang 把抱怨打包成 CLAUDE.md 推上 GitHub，第一天近 6,000 stars（至今 124,000）" },
+          { time: "02:09", seconds: 129, text: "CLAUDE.md 定義：放在 codebase 根目錄的純文字檔，Claude Code 啟動時優先讀取，作為整個 repo 的常駐指令" },
+          { time: "02:28", seconds: 148, text: "三種常見寫法錯誤：(1) 塞太多 → 超過 4,000 tokens 遵從率掉到 30%（2）不寫 → 每次重新 prompt，5 倍 token 浪費（3）貼一次就忘 → codebase 漂移後規則失效" },
+          { time: "03:02", seconds: 182, text: "硬性天花板：超過 200 行，重要規則淹沒在噪音裡" },
+          { time: "03:11", seconds: 191, text: "Karpathy 4 條規則（65 行，關閉 ~40% 失敗模式）：(1) Think first — 說出假設、有疑就問（2）Simplicity — 最少程式碼解決問題（3）Surgical — 只改必要的部分（4）Goal-driven — 定義完成態再迭代" },
+          { time: "04:01", seconds: 241, text: "2026 年 1 月後使用模式改變（長 agent loop／多 codebase／prototype vs production），4 條不再夠用" },
+          { time: "04:19", seconds: 259, text: "@mnilax 新增 Rules 5-8：(5) Model for judgment — AI 負責判斷，路由／重試／狀態碼留在程式碼（6）Token budgets — 每任務 4K，每會話 30K，超過就摘要重開（7）No averaging — 風格衝突時選一個，不要折衷（8）Read first — 先讀再寫，「這看起來無關」是最危險的一句話" },
+          { time: "05:02", seconds: 302, text: "Rules 9-12（工作流完整性）：(9) 測試驗證意圖而非行為（10）每步做 checkpoint（11）慣例優先於個人品味（12）失敗要大聲說" },
+          { time: "05:50", seconds: 350, text: "實測數據：6 週／50 任務／30 codebases — 無規則 41% 錯誤；4 條 11%（遵從 80%）；12 條 3%（遵從 76%）" },
+          { time: "06:25", seconds: 385, text: "Karpathy 4 條失效的 4 個場景：(1) 長 agent loop 無預算無 checkpoint → 漂移（2）Monorepo 多風格 → Claude 隨機選或折衷（3）測試劇場 — 測試通過但沒測到東西（4）生產級規則套在 prototype 上過度防禦" },
+          { time: "07:28", seconds: 448, text: "失敗的寫法：超過 14 條 → 遵從率降到 52%；工具專屬指令 → 環境不一致會壞；範例多過規則 → 過擬合；模糊詞（be careful）→ 遵從率 ~30%；身份提示（act like senior engineer）→ 無效" },
+          { time: "08:23", seconds: 503, text: "完整 12 條模板：控制在 200 行以內，下方留空間給專案特定規則" },
+          { time: "09:28", seconds: 568, text: "安裝建議：用 >> 追加而非 > 覆蓋；每條規則要能回答「防止什麼錯誤」，答不出就刪；6 條針對你真實錯誤的規則 > 12 條通用規則" }
+        ],
+        keyPoints: [
+          {
+            title: "1. CLAUDE.md 的本質：Prompt Engineering 的持久化",
+            items: [
+              "CLAUDE.md 就是把「每次都要重講的 system prompt」固化成檔案",
+              "固化帶來三個好處：跨會話一致性、版本控制可追蹤、團隊成員共享同一份指令",
+              "最大的洞察是「量有天花板」— 超過 200 行效果下降，與 LLM 注意力衰減的已知特性一致"
+            ]
+          },
+          {
+            title: "2. 12 條規則的分層架構",
+            items: [
+              "基礎層（Karpathy 1-4：Think／Simple／Surgical／Goal）：處理單次 prompt 的常見失誤 — 瞎猜、過度工程、亂改、無目標",
+              "擴展層（mnilax 5-8：Judgment／Budget／No-average／Read-first）：處理長會話、多 codebase 的新問題 — 角色混淆、token 爆炸、風格混亂、上下文盲區",
+              "工作流層（mnilax 9-12：Intent-test／Checkpoint／Convention／Fail-loud）：處理端到端可靠性 — 假測試、狀態遺失、風格分叉、靜默失敗",
+              "遞進邏輯：基礎層管「一次對話」品質，擴展層管「長會話／多專案」品質，工作流層管「自動化流水線」品質。隨著 Claude Code 往 Routines／Agent Loop 發展，後兩層重要性只會上升"
+            ]
+          },
+          {
+            title: "3. 數字背後的取捨：遵從率 vs 錯誤率",
+            items: [
+              "12 條規則的遵從率（76%）只比 4 條（80%）低 4 個百分點，但錯誤率從 11% 降到 3%",
+              "即使 Claude 不是每條都完美遵守，「大部分時候遵守大部分規則」就足以大幅降低嚴重錯誤",
+              "超過 14 條出現斷崖式下降（遵從率 76% → 52%）：規則數量的邊際效益遞減極快，超過閾值反而有害"
+            ]
+          },
+          {
+            title: "4. 立即可執行的行動",
+            items: [
+              "先從 Karpathy 4 條開始，不要一步到位",
+              "跑一週，記錄 Claude 犯的錯誤類型",
+              "從 5-12 中挑出「能防止你實際遇到的錯誤」的規則加入",
+              "控制總行數 < 200 行，定期隨 codebase 演進修訂",
+              "用 >> 追加，不要覆蓋既有的專案規則"
+            ]
+          },
+          {
+            title: "5. 來源內容的批判性思考",
+            items: [
+              "實測方法論不透明：41% → 11% → 3% 來自 @mnilax 的 X 貼文，但任務難度分佈、codebase 涵蓋範圍、錯誤判定標準都缺失，只能當方向性參考",
+              "因果性 vs 相關性：錯誤率下降可能混入其他因子（寫 CLAUDE.md 的人本身更注重品質、會花更多時間 review），需要對照實驗才能確認因果",
+              "影片 100% AI 生成（Sophiatoshi 頻道），人類只審定邏輯：數字可能被圓滑化、反面觀點被弱化，不應作為配置自己 CLAUDE.md 的唯一依據",
+              "缺乏競品對比：未比較 Cursor .cursorrules、Copilot copilot-instructions.md 等，無法判斷這些發現是 Claude 特有還是 LLM 通用"
+            ]
+          }
+        ]
+      };
+    </script>
+    <script src="../dist/youtube-view/youtube-sync.js"></script>
+  </body>
+</html>

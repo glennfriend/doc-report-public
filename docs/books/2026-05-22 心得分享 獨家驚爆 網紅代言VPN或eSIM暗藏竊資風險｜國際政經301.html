@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>獨家驚爆：網紅代言 VPN 或 eSIM 暗藏竊資風險</title>
+    <link rel="stylesheet" href="../dist/youtube-view/app.css">
+  </head>
+  <body>
+    <main class="page" data-youtube-sync-app></main>
+
+    <script>
+      window.YOUTUBE_SYNC_CONFIG = {
+        title: "獨家驚爆 網紅代言VPN或eSIM暗藏竊資風險｜國際政經301",
+        updatedAt: "2026-05-22",
+        videoUrl: "https://www.youtube.com/watch?v=ROEtsQEIFbE",
+        videoId: "ROEtsQEIFbE",
+        tags: ["eSIM", "VPN", "資安", "中國移動國際", "國家安全", "旅遊上網", "隱私"],
+        summary: "這篇在講出國旅遊使用的 eSIM 與日常使用的免費 VPN 背後的資安風險，許多 eSIM 的資料封包會被路由回中國電信商，免費 VPN 大量由中國公司經營，使用者的 metadata 會被中國電信商取得",
+        timeline: [
+          { time: "00:44", seconds: 44, text: "出國用 eSIM 掃 QR code 就能上網，價格比漫遊便宜，但有些 eSIM 的網路會先連到香港或中國電信公司「中國移動國際」，導致在日本或歐洲用 ChatGPT、Claude、Gemini 等 AI 服務時被阻擋，因為這些 AI 公司封鎖了來自中國和香港的 IP" },
+          { time: "04:48", seconds: 288, text: "eSIM 供應商在技術上是「虛擬行動網路業者（MVNO）」，沒有自己的基地台，是向電信公司批量買進頻寬與流量再零售。中國政府長期補助基地台與電信基礎設施，因此中國電信公司能賣出最便宜的流量，eSIM 廠商為了降低成本會優先採購中國流量" },
+          { time: "06:00", seconds: 360, text: "eSIM 的技術架構叫 home-routed roaming。手機訊號接入當地電信公司基地台（例如日本 NTT DoCoMo 或 Softbank），但資料封包會被回傳到 eSIM 廠商指定的 Home Network。因為中國流量最便宜，Home Network 往往就是中國的電信公司。手機畫面上看到的當地電信商名稱只代表「無線訊號接入」，不代表資料封包的實際傳輸路徑" },
+          { time: "08:54", seconds: 534, text: "資訊安全學界知名論壇 USENIX Security 在 2025 年收錄論文《eSIMplicity or eSIMplification?》。研究團隊購買多家旅遊 eSIM 測試，發現歐洲品牌 Holafly（總部在愛爾蘭）取得的 public IP 地址指向 China Mobile International Limited（中國移動國際）。traceroute 結果多次出現 China Mobile 與香港節點，eSIM 設定檔存放位置（SM-DP+）也指向中國移動的相關網路" },
+          { time: "11:09", seconds: 669, text: "雖然傳輸內容經過 HTTPS 加密，中國移動無法打開資料封包看內容，但可以取得 metadata：你在哪裡上網、幾點上網、用哪些 APP、資料傳到哪些服務、各 APP 的流量大小、是通訊軟體還是社群帳號、有沒有使用中國 APP。這些資訊足以做大量分析" },
+          { time: "13:27", seconds: 807, text: "中國是全球最大的 eSIM 提供國，但中國政府自己對 eSIM 政策極嚴格。2025 年前完全禁止中國民眾使用手機 eSIM，之後只開放非常有限的白名單，且需實名制到門市做身份驗證，不能安裝非中國電信商的 eSIM" },
+          { time: "14:59", seconds: 899, text: "論文研究團隊還發現部分旅遊 eSIM 出現 STK（SIM Application Toolkit）行為。SIM 卡可以主動向手機發出指令，包括主動發簡訊、傳送定位、開啟特定網頁、甚至打電話，這叫 proactive command" },
+          { time: "16:27", seconds: 987, text: "2018 年調查單位 Top10VPN 追查美國與英國蘋果及安卓商店最熱門的 30 款免費 VPN，發現 17 個跟中國有關，86% 有隱私政策問題，64% 甚至沒有正式網站" },
+          { time: "17:24", seconds: 1044, text: "2020 年 Top10VPN 再次追蹤，美國熱門免費 VPN 中至少 10 款是中國的，另有 4 款疑似有中國連結，全球安裝量達 2.23 億次" },
+          { time: "17:47", seconds: 1067, text: "2025 年 Tech Transparency Project 追查美國蘋果商店前 100 名免費 VPN，超過 20 個明確由中國公司擁有，部分背後是中國奇虎 360（在中國被稱為流氓軟體，已被美國商務部列入實體管制清單）。被點名的 VPN 包括 Turbo VPN、VPN Proxy Master、Thunder VPN、Snap VPN、Signal Secure VPN" },
+          { time: "19:39", seconds: 1179, text: "2025 年 Citizen Lab 研究《Hidden Links》發現，許多看似不同品牌的 VPN 其實共享基礎設施，甚至共享 APK 裡的 Shadowsocks 密碼，很可能是同一個系統長出來的不同皮膚" },
+          { time: "21:52", seconds: 1312, text: "研究員建議的解決方案：立法強制 VPN 與 eSIM 廠商在台灣營業時揭露電信商來源與股權結構，提供消費者安全參考名單。在台灣人最頻繁的旅遊路線（日本、韓國、泰國）建立可信的替代品。明確規範政治人物、政務官、軍警情治人員、國防及科技供應鏈高層、關鍵基礎設施主管在公務或敏感行程中禁止使用中國／香港／澳門背景的 eSIM 及所有免費或所有權不透明的 VPN" }
+        ],
+        keyPoints: [
+          {
+            title: "1. eSIM 便宜的代價是資料封包經過中國電信商",
+            items: [
+              "eSIM 廠商是 MVNO，沒有自己的基地台，靠批量採購流量再轉售",
+              "中國政府補貼電信基礎設施，中國電信公司的流量價格最低，eSIM 廠商為了壓低成本會優先採購",
+              "技術上使用 home-routed roaming，手機接入當地基地台（顯示當地電信商名稱），但資料封包被送回中國電信商處理",
+              "USENIX Security 論文已證實 Holafly 等品牌的 IP 與路由都指向 China Mobile International Limited"
+            ]
+          },
+          {
+            title: "2. 即使 HTTPS 加密，metadata 仍然完全暴露",
+            items: [
+              "中國電信商無法解密封包內容，但可以知道：上網時間、地點、使用的 APP、流量去向、流量大小、是否使用中國 APP",
+              "以色列駭入伊朗軍政高層手機的案例顯示，定位資訊本身就是極高價值的情報",
+              "部分 eSIM 還具備 STK 能力，SIM 卡可主動發送定位、發簡訊、開啟網頁、撥打電話"
+            ]
+          },
+          {
+            title: "3. 免費 VPN 大量由中國公司經營且刻意隱藏關聯",
+            items: [
+              "多項獨立調查（Top10VPN 2018/2020、Tech Transparency Project 2025、Citizen Lab 2025）一致發現免費 VPN 與中國的高度關聯",
+              "部分 VPN 背後是中國奇虎 360，已被美國列入實體管制清單",
+              "不同品牌的 VPN 實際共享基礎設施與密碼，是同一個系統的不同外殼"
+            ]
+          },
+          {
+            title: "4. 中國自己嚴格管制 eSIM，代表他們最清楚風險在哪裡",
+            items: [
+              "2025 年前完全禁止中國民眾使用手機 eSIM",
+              "開放後也限制白名單，需實名制，不能安裝非中國電信商的 eSIM",
+              "中國《國家情報法》第七條要求公民協助國家情報工作，《網路安全法》第 26 條要求網路服務提供者取得使用者真實身份"
+            ]
+          },
+          {
+            title: "5. 最安全的做法是用台灣電信公司的國際漫遊",
+            items: [
+              "研究員建議消費者選擇台灣電信公司的漫遊服務，雖然較貴但整條鏈路都在可信任的電信商手中",
+              "若堅持使用 eSIM，到目的地後應檢查 public IP 歸屬，確認是否為中國電信商",
+              "測試 ChatGPT、Claude、Gemini 是否被擋，被擋代表 IP 被判定為中國／香港來源"
+            ]
+          },
+          {
+            title: "6. 個人查證：Klook 與 KKday 新加坡上網商品風險評估",
+            items: [
+              "KKday eSIM（USIMSA）— 高風險：商品頁面明確標示 MVNO 為 China Mobile International Limited，正是影片與論文點名的高風險架構。資料封包會經過中國移動國際網路，AI 服務可能被擋，metadata 對中國電信商可見。不建議使用",
+              "Klook eSIM（Klook 自營）— 風險不明：當地電信商 Singtel，但頁面未揭露 MVNO 資訊，無法確認封包是否也經過中國移動國際，透明度不足無法判定安全",
+              "Klook 實體 SIM 卡（aircoolsim，桃園機場領取）— 中低風險：實體 SIM 較不容易做 home-routed roaming 拆分，但 aircoolsim 的電信來源與股權結構未公開，無法 100% 排除風險",
+              "最安全替代方案：台灣電信公司國際漫遊（中華電信、台灣大哥大、遠傳等），或到新加坡當地 Singtel 門市購買預付 SIM 卡，不經過任何中間 MVNO"
+            ]
+          }
+        ]
+      };
+    </script>
+    <script src="../dist/youtube-view/youtube-sync.js"></script>
+  </body>
+</html>
