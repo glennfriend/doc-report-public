@@ -1,0 +1,197 @@
+/* Scrapbook — 版面與配色。延續站上風格(system-ui、藍色連結)。 */
+
+:root {
+  --fg: #24292f;
+  --muted: #57606a;
+  --border: #d0d7de;
+  --border-soft: #d8dee4;
+  --accent: #2563eb;
+  --bg-code: #f6f8fa;
+
+  /* token 配色:結構化資料與程式碼共用 */
+  --tok-key: #0550ae;
+  --tok-str: #0a7d33;
+  --tok-num: #953800;
+  --tok-bool: #8250df;
+  --tok-kw: #cf222e;
+  --tok-punct: #57606a;
+  --tok-comment: #6e7781;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "Segoe UI", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+  line-height: 1.7;
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1.2rem;
+  color: var(--fg);
+}
+
+.page-head h1 { border-bottom: 2px solid var(--border); padding-bottom: .3em; margin: 0 0 .3em; }
+.lead { color: var(--muted); margin-top: 0; }
+
+/* ── 工作區:輸入 / 顯示 兩欄,窄螢幕改上下堆疊 ── */
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-top: 1.5rem;
+}
+@media (max-width: 760px) {
+  .workspace { grid-template-columns: 1fr; }
+}
+
+.pane { display: flex; flex-direction: column; min-width: 0; }
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: .5rem;
+}
+.pane-title { font-weight: 600; }
+.badge {
+  font-size: .8rem;
+  color: var(--muted);
+  background: var(--bg-code);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: .1em .7em;
+}
+.badge:empty { display: none; }
+
+.btn {
+  margin-left: auto;
+  font: inherit;
+  font-size: .9rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--fg);
+  padding: .25em .8em;
+}
+.btn:hover { background: var(--bg-code); }
+/* 同一列若已有 badge 把 copy 推到最右,save 也靠右 */
+.pane-head .badge + .btn { margin-left: 0; }
+
+.input {
+  width: 100%;
+  min-height: 340px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .9rem;
+  line-height: 1.6;
+  padding: .8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+}
+.input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.display {
+  min-height: 340px;
+  padding: .8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: auto;
+  background: #fff;
+}
+.display .hint { color: var(--muted); }
+
+/* ── 已儲存清單(chips) ── */
+.saved-section { margin-top: 2rem; }
+.saved-section h2 { border-bottom: 1px solid var(--border-soft); padding-bottom: .2em; font-size: 1.1rem; }
+.saved { display: flex; flex-wrap: wrap; gap: .5rem; }
+.saved .hint { color: var(--muted); }
+
+.chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+  max-width: 100%;
+}
+.chip-label {
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  padding: .3em .4em .3em .9em;
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chip-label:hover { color: var(--accent); }
+.chip-del {
+  font: inherit;
+  font-size: .8rem;
+  cursor: pointer;
+  border: 0;
+  border-left: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--muted);
+  padding: 0 .7em;
+}
+.chip-del:hover { background: #ffebe9; color: #cf222e; }
+
+/* ── 顯示內容的通用排版 ── */
+.display a { color: var(--accent); }
+.display img { max-width: 100%; height: auto; }
+.display table { border-collapse: collapse; }
+.display th, .display td { border: 1px solid var(--border-soft); padding: .3em .6em; }
+.display blockquote { margin: .6em 0; padding-left: 1em; border-left: 3px solid var(--border); color: var(--muted); }
+.display h1, .display h2, .display h3 { border: 0; }
+
+/* 程式碼 / 結構化資料的顯示框 */
+.code-view {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg-code);
+  border-radius: 8px;
+  padding: .9rem 1rem;
+}
+.display code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--bg-code);
+  border-radius: 4px;
+  padding: .1em .35em;
+}
+.display pre.code-view code { background: none; padding: 0; }
+
+/* token 上色 */
+.tok-key { color: var(--tok-key); }
+.tok-str { color: var(--tok-str); }
+.tok-num { color: var(--tok-num); }
+.tok-bool { color: var(--tok-bool); font-weight: 600; }
+.tok-kw { color: var(--tok-kw); }
+.tok-punct { color: var(--tok-punct); }
+.tok-comment { color: var(--tok-comment); font-style: italic; }
+
+/* ── 提示 toast ── */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%) translateY(1rem);
+  background: #24292f;
+  color: #fff;
+  padding: .5em 1.1em;
+  border-radius: 8px;
+  font-size: .9rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

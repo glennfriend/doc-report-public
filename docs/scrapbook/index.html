@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="貼上即時 render 的剪貼簿工具。">
+  <title>Scrapbook</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="page-head">
+    <h1>📋 Scrapbook</h1>
+    <p class="lead">貼上任何內容即時 render;可儲存於本機,隨時回填與複製(保留格式)。</p>
+  </header>
+
+  <main class="workspace">
+    <section class="pane">
+      <div class="pane-head">
+        <span class="pane-title">輸入</span>
+        <button id="save" class="btn" type="button">＋ 儲存</button>
+      </div>
+      <textarea id="input" class="input"
+        placeholder="在這裡貼上 Markdown、HTML、JSON / 物件、程式碼…"
+        spellcheck="false"></textarea>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <span class="pane-title">顯示</span>
+        <span id="badge" class="badge"></span>
+        <button id="copy" class="btn btn-ghost" type="button">📋 複製</button>
+      </div>
+      <div id="display" class="display"></div>
+    </section>
+  </main>
+
+  <section class="saved-section">
+    <h2>已儲存</h2>
+    <div id="saved" class="saved"></div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
