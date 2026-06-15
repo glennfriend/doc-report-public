@@ -7,6 +7,7 @@
   --border-soft: #d8dee4;
   --accent: #2563eb;
   --bg-code: #f6f8fa;
+  --bg-page: #e9ebef; /* 整體頁面底色(略暗) */
 
   /* token 配色:結構化資料與程式碼共用 */
   --tok-key: #0550ae;
@@ -24,20 +25,18 @@ body {
   font-family: -apple-system, "Segoe UI", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
   line-height: 1.7;
   max-width: 1100px;
-  margin: 2rem auto;
-  padding: 0 1.2rem;
+  margin: 0 auto;
+  padding: 2rem 1.2rem;
   color: var(--fg);
+  background: var(--bg-page); /* 整體稍暗,避免全白;顯示版會另外維持白底 */
 }
-
-.page-head h1 { border-bottom: 2px solid var(--border); padding-bottom: .3em; margin: 0 0 .3em; }
-.lead { color: var(--muted); margin-top: 0; }
 
 /* ── 工作區:輸入 / 顯示 兩欄,窄螢幕改上下堆疊 ── */
 .workspace {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.2rem;
-  margin-top: 1.5rem;
+  margin-top: .5rem;
 }
 @media (max-width: 760px) {
   .workspace { grid-template-columns: 1fr; }

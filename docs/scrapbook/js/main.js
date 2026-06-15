@@ -81,6 +81,7 @@ function buildChip(item) {
   del.textContent = '✕';
   del.title = '刪除';
   del.addEventListener('click', () => {
+    if (!confirm(`確定要刪除「${item.title}」嗎?`)) return;
     removeItem(item.id);
     renderSavedList();
   });
