@@ -7,7 +7,7 @@
   --border-soft: #d8dee4;
   --accent: #2563eb;
   --bg-code: #f6f8fa;
-  --bg-page: #e9ebef; /* 整體頁面底色(略暗) */
+  --bg-page: #dde2e9; /* 整體頁面底色(略暗,明顯區隔白色面板) */
 
   /* token 配色:結構化資料與程式碼共用 */
   --tok-key: #0550ae;
@@ -73,8 +73,6 @@ body {
   padding: .25em .8em;
 }
 .btn:hover { background: var(--bg-code); }
-/* 同一列若已有 badge 把 copy 推到最右,save 也靠右 */
-.pane-head .badge + .btn { margin-left: 0; }
 
 .input {
   width: 100%;
