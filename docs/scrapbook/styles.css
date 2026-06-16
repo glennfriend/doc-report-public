@@ -21,6 +21,10 @@
 
 * { box-sizing: border-box; }
 
+/* 確保 hidden 屬性永遠生效:否則像 .image-bar 設了 display:flex 會蓋過瀏覽器預設的
+   [hidden]{display:none},造成「明明設了 hidden 卻還是顯示」。 */
+[hidden] { display: none !important; }
+
 body {
   font-family: -apple-system, "Segoe UI", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
   line-height: 1.7;
@@ -61,8 +65,10 @@ body {
 }
 .badge:empty { display: none; }
 
+/* 右上動作區:把按鈕群推到最右、彼此並排 */
+.pane-actions { margin-left: auto; display: flex; gap: .5rem; align-items: center; }
+
 .btn {
-  margin-left: auto;
   font: inherit;
   font-size: .9rem;
   cursor: pointer;
@@ -101,6 +107,35 @@ body {
 /* ── 已儲存清單(chips) ── */
 .saved-section { margin-top: 2rem; }
 .saved-section h2 { border-bottom: 1px solid var(--border-soft); padding-bottom: .2em; font-size: 1.1rem; }
+.storage-status { font-size: .8rem; font-weight: normal; color: var(--muted); }
+
+/* 貼圖小列(檔名輸入 + 儲存/取消) */
+.image-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+.image-bar-size { font-size: .85rem; color: var(--muted); }
+.image-bar-name {
+  flex: 1;
+  min-width: 8rem;
+  font: inherit;
+  padding: .25em .6em;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* 顯示版裡的 CSV 表格 */
+.csv-view { border-collapse: collapse; font-size: .88rem; }
+.csv-view th, .csv-view td { border: 1px solid var(--border-soft); padding: .3em .6em; text-align: left; }
+.csv-view th { background: var(--bg-code); }
+
+/* 顯示版裡的圖片 */
+.image-view { margin: 0; }
+.image-view img { max-width: 100%; height: auto; border-radius: 6px; }
+.image-view figcaption { margin-top: .3em; font-size: .85rem; color: var(--muted); }
 .saved { display: flex; flex-wrap: wrap; gap: .5rem; }
 .saved .hint { color: var(--muted); }
 
@@ -113,6 +148,10 @@ body {
   background: #fff;
   max-width: 100%;
 }
+/* chip 依內容分類上色:圖片=淡黃、純文字=淡灰、特殊文字格式(json/markdown/csv…)=淡紅 */
+.chip.cat-image { background: #fdf3d0; border-color: #f3e4a8; }
+.chip.cat-plain { background: #eceef1; border-color: #dce0e5; }
+.chip.cat-rich  { background: #fde2e1; border-color: #f5c6c4; }
 .chip-label {
   font: inherit;
   font-size: .85rem;

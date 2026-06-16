@@ -13,7 +13,9 @@
     <section class="pane">
       <div class="pane-head">
         <span class="pane-title">輸入</span>
-        <button id="save" class="btn" type="button">Scrapbook 儲存</button>
+        <div class="pane-actions">
+          <button id="save" class="btn" type="button">Scrapbook 儲存</button>
+        </div>
       </div>
       <textarea id="input" class="input"
         placeholder="在這裡貼上 Markdown、HTML、JSON / 物件、程式碼…"
@@ -24,14 +26,16 @@
       <div class="pane-head">
         <span class="pane-title">顯示</span>
         <span id="badge" class="badge"></span>
-        <button id="copy" class="btn btn-ghost" type="button">📋 複製</button>
+        <div class="pane-actions">
+          <button id="copy" class="btn btn-ghost" type="button">📋 複製</button>
+        </div>
       </div>
       <div id="display" class="display"></div>
     </section>
   </main>
 
   <section class="saved-section">
-    <h2>儲存庫</h2>
+    <h2>儲存庫 <span id="storage-status" class="storage-status"></span></h2>
     <div id="saved" class="saved"></div>
   </section>
 

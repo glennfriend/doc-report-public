@@ -7,6 +7,7 @@ export const TYPES = {
   json: 'JSON / 物件',
   html: 'HTML',
   markdown: 'Markdown',
+  csv: 'CSV',
   code: '程式碼',
   text: '純文字',
 };
@@ -18,7 +19,17 @@ export function detectType(raw) {
   if (looksHtml(text)) return 'html';
   if (looksMarkdown(text)) return 'markdown';
   if (looksCode(text)) return 'code';
+  if (looksCsv(text)) return 'csv';
   return 'text';
+}
+
+// CSV:至少兩行、每行用逗號切出的欄數一致且 ≥2 欄。
+// 放在最後判斷,避免把含逗號的散文誤判(已先讓 markdown / code 等先命中)。
+function looksCsv(text) {
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return false;
+  const cols = lines.map((l) => l.split(',').length);
+  return cols[0] >= 2 && cols.every((c) => c === cols[0]);
 }
 
 // 物件 / 陣列字面值:開頭就是 `{`(涵蓋 {a:"123"} 這種非嚴格 JSON),
