@@ -35,10 +35,10 @@ function updateDisplay() {
 }
 
 // ── 儲存目前輸入 ──
-saveBtn.addEventListener('click', () => {
+saveBtn.addEventListener('click', async () => {
   if (!input.value.trim()) { showToast('沒有內容可儲存'); return; }
-  addItem(input.value);
-  renderSavedList();
+  await addItem(input.value);
+  await renderSavedList();
   showToast('已儲存');
 });
 
@@ -54,8 +54,8 @@ copyBtn.addEventListener('click', async () => {
 });
 
 // ── 已儲存清單 ──
-function renderSavedList() {
-  const items = loadItems();
+async function renderSavedList() {
+  const items = await loadItems();
   savedList.innerHTML = '';
   if (!items.length) {
     savedList.innerHTML = '<span class="hint">尚無儲存的內容。</span>';
@@ -80,10 +80,10 @@ function buildChip(item) {
   del.className = 'chip-del';
   del.textContent = '✕';
   del.title = '刪除';
-  del.addEventListener('click', () => {
+  del.addEventListener('click', async () => {
     if (!confirm(`確定要刪除「${item.title}」嗎?`)) return;
-    removeItem(item.id);
-    renderSavedList();
+    await removeItem(item.id);
+    await renderSavedList();
   });
 
   chip.append(label, del);
