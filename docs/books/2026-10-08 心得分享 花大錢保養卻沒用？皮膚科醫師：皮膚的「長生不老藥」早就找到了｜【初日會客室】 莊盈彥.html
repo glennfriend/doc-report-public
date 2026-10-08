@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>video-to-html</title>
+    <style>
+:root {
+  color-scheme: light;
+  --bg: #f5efe4;
+  --surface: rgba(255, 252, 247, 0.9);
+  --surface-strong: #fffaf2;
+  --text: #2d241f;
+  --muted: #6f6258;
+  --line: rgba(100, 73, 54, 0.14);
+  --accent: #b74f2c;
+  --accent-soft: rgba(183, 79, 44, 0.12);
+  --accent-strong: #8f3517;
+  --shadow: 0 24px 60px rgba(77, 49, 29, 0.12);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --font-title: "Iansui", "Noto Serif TC", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(226, 177, 133, 0.28), transparent 32%),
+    radial-gradient(circle at top right, rgba(255, 220, 168, 0.3), transparent 28%),
+    linear-gradient(180deg, #f6f0e4 0%, #efe3d2 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 78%);
+}
+
+.page {
+  position: relative;
+  max-width: 1580px;
+  margin: 0 auto;
+  padding: 12px 20px 32px;
+  --subtitle-width: 320px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8px var(--subtitle-width);
+  gap: 12px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.hero-copy {
+  margin-top: 12px;
+  padding: 28px;
+}
+
+.hero h1 {
+  margin: 16px 0 14px;
+  font-family: var(--font-title);
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.12;
+}
+
+.summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.meta-list {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+}
+
+.meta-item {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(100, 73, 54, 0.08);
+}
+
+.meta-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.meta-value {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.video-panel {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background: #1f1712;
+}
+
+#player,
+#player iframe {
+  width: 100%;
+  height: 100%;
+}
+
+/* 自製繁中字幕 overlay: 疊在影片上方, 位置抓在 YouTube 原生 CC 之上,
+   讓「繁中 (我們的) + 原文 (YouTube 的)」變成上下兩行 */
+.cc-overlay {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: var(--cc-overlay-bottom, 20%);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.cc-overlay[hidden] {
+  display: none;
+}
+
+.cc-overlay-text:empty {
+  display: none;
+}
+
+.cc-overlay-text {
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(8, 8, 8, 0.78);
+  color: #fff;
+  font-size: clamp(15px, 2.1vw, 24px);
+  font-weight: 500;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+/* 中英夾雜學習字幕: 句子以繁中為主, 刻意保留的英文單字/片語用 .learn 標出,
+   讓每一句都能學到一個字 (深底字幕上用暖黃色 + 粗體, 底線加強辨識) */
+.cc-overlay-text .learn {
+  color: #ffd166;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.video-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1f1712;
+}
+
+.video-toolbar[hidden] {
+  display: none;
+}
+
+.cc-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 250, 242, 0.28);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 250, 242, 0.62);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.cc-toggle::before {
+  content: "CC";
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.cc-toggle:hover {
+  color: #fffaf2;
+  border-color: rgba(255, 250, 242, 0.5);
+}
+
+.cc-toggle[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffaf2;
+}
+
+.subtitle-panel {
+  padding: 10px;
+  max-height: calc(100vh - 24px);
+  overflow: hidden;
+}
+
+.splitter {
+  position: relative;
+  align-self: stretch;
+  width: 8px;
+  min-height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+}
+
+.splitter-line {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: rgba(111, 98, 88, 0.4);
+}
+
+.splitter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.splitter-badge {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(45, 36, 31, 0.9);
+  color: #fffaf2;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.splitter:hover .splitter-badge,
+.splitter:focus-visible .splitter-badge,
+.splitter.is-dragging .splitter-badge {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.splitter:hover .splitter-line,
+.splitter:focus-visible .splitter-line,
+.splitter.is-dragging .splitter-line {
+  width: 2px;
+  background: rgba(143, 53, 23, 0.8);
+}
+
+.content-grid {
+  display: block;
+  margin-top: 12px;
+}
+
+.section {
+  padding: 24px;
+}
+
+.section h2 {
+  margin: 0 0 18px;
+  font-family: var(--font-title);
+  font-size: 30px;
+}
+
+.section h3 {
+  margin: 24px 0 12px;
+  font-size: 20px;
+}
+
+.section p,
+.section li {
+  color: var(--text);
+  line-height: 1.8;
+}
+
+.section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 8px;
+  max-height: calc(100vh - 44px);
+  overflow: auto;
+  padding-right: 8px;
+  overscroll-behavior: contain;
+}
+
+.timeline-item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: #fffdf9;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.timeline-item::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.timeline-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(183, 79, 44, 0.28);
+  box-shadow: 0 12px 30px rgba(77, 49, 29, 0.08);
+}
+
+.timeline-item.active {
+  background: linear-gradient(135deg, rgba(183, 79, 44, 0.14), rgba(255, 255, 255, 0.98));
+  border-color: rgba(183, 79, 44, 0.4);
+}
+
+.timeline-time {
+  display: inline-flex;
+  float: left;
+  justify-content: center;
+  min-width: 0;
+  margin-right: 12px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.timeline-text {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+.timeline-item.active .timeline-text {
+  font-weight: 700;
+}
+
+.sidebar {
+  display: grid;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(100, 73, 54, 0.1);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .splitter {
+    display: none;
+  }
+
+  .video-panel {
+    width: 100%;
+  }
+
+  .subtitle-panel {
+    max-height: none;
+  }
+
+  .timeline-list {
+    max-height: 240px;
+  }
+
+  .sidebar {
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 6px 10px 24px;
+  }
+
+  .hero-copy,
+  .section {
+    padding: 20px;
+  }
+
+  .timeline-item {
+    padding: 10px 10px;
+  }
+
+  .timeline-time {
+    margin-right: 10px;
+  }
+
+  .section h2 {
+    font-size: 26px;
+  }
+}
+    </style>
+    <style>
+      /* 單檔版增補: 外文影片 timeline 的原文行 (spec text 內的 <span class="orig">) */
+      .timeline-text .orig { display: block; font-style: italic; font-size: 0.86em; opacity: 0.65; margin-top: 2px; }
+    </style>
+  </head>
+  <body>
+    <main class="page" data-youtube-sync-app></main>
+
+    <script type="application/json" id="spec">
+{"title":"花大錢保養卻沒用？皮膚科醫師：皮膚的「長生不老藥」早就找到了｜【初日會客室】 莊盈彥","updatedAt":"2026-10-08","videoUrl":"https://www.youtube.com/watch?v=2GPOLb3hnNo","videoId":"2GPOLb3hnNo","tags":["皮膚科","痘痘","A酸","A醇","防曬","抗老","保養迷思"],"summary":"這篇意圖在講：痘痘來自細菌、角質代謝、皮脂腺與荷爾蒙，洗臉和瓶瓶罐罐解決不了；真正有效的是有文獻的成分（A酸）、規律作息，以及像刷牙一樣每天擦防曬。","timeline":[{"time":"01:56","seconds":116,"text":"痘痘不只是細菌：皮膚科常先開抗生素殺菌，但還有角質代謝異常，皮脂腺出口被堵、油往內走就發炎成囊腫。"},{"time":"02:22","seconds":142,"text":"皮脂腺會隨年紀越長越大、出油越多，大約到50歲才停；過了12歲皮膚變差，就是皮脂腺開始發育，和性荷爾蒙一定有關。"},{"time":"03:09","seconds":189,"text":"洗臉消不了痘：出油太快，早上洗完到中午就滿臉油；就算每30分鐘洗一次，荷爾蒙與角質代謝沒變，該塞的還是會塞。"},{"time":"04:18","seconds":258,"text":"80%的人是油性肌膚；早上摸鼻翼周圍是油的就該洗臉，洗完臉繃繃的感覺完全正常。"},{"time":"05:09","seconds":309,"text":"皮脂分泌取決於荷爾蒙，荷爾蒙取決於作息，跟你擦什麼完全無關，沒有真正能控油的保養品。"},{"time":"05:45","seconds":345,"text":"選保養品要看有文獻證據的成分：A酸、A醇保證有效；美白看麴酸、熊果素、傳明酸、菸鹼醯胺；吹得很神的「某某花萃取」多半只是廠商自己的研究。"},{"time":"06:37","seconds":397,"text":"洗臉方法：早晚各一次；乾性肌洗30秒；油性肌（夏天吸油面紙能吸滿半張）洗兩次、每次1分鐘，洗完不要讓臉太繃。"},{"time":"07:03","seconds":423,"text":"洗臉的目的只是洗掉油脂髒汙，不能治痘、不能抗老、也不能防曬，該做的事還是要做。"},{"time":"07:45","seconds":465,"text":"A酸適應期：第一次接觸、用的藥又比較重時，一定會紅、癢、脫皮。"},{"time":"08:03","seconds":483,"text":"分辨過敏：過敏是每碰一次反應越嚴重；A酸A醇則是一次比一次輕，最後完全不紅不癢，屬於正常反應。"},{"time":"08:38","seconds":518,"text":"A醇是保養品，要先轉成A酸才能進細胞核作用；A酸是藥品，只有皮膚科醫師能開。"},{"time":"09:09","seconds":549,"text":"保養品的A醇濃度低，效果一定不如A酸；要治嚴重痘痘、斑點、真的拿掉幾條皺紋，只有A酸做得到，醫師稱它是皮膚的「長生不老藥」。"},{"time":"10:08","seconds":608,"text":"A酸不會讓皮膚變薄：它去角質所以能治痘，並在真皮刺激膠原蛋白讓細紋變平，是皮膚變厚的過程。"},{"time":"10:48","seconds":648,"text":"口服A酸對胎兒一定有影響（X級），計畫懷孕要提前半年停藥；外擦濃度低可以用，但懷孕後醫師也建議停用。"},{"time":"12:08","seconds":728,"text":"痘痘一直在同一區冒：毛孔裡藏著摸都摸不出來的微小粉刺，一顆發炎會連鎖帶動旁邊，所以要整片治療。"},{"time":"12:47","seconds":767,"text":"表面痘痘消了不代表清掉了，皮脂腺還在持續出油；想根治就要治療皮脂腺，容易長痘的人是長期抗戰。"},{"time":"13:13","seconds":793,"text":"早點睡真的能改善痘痘，原因又是荷爾蒙；一般臉上三五顆、下巴幾顆的痘痘，靠嚴格作息很大機率能改善大部分。"},{"time":"14:22","seconds":862,"text":"下巴、鼻子、眉心愛長痘，是因為T字部位皮脂腺最多；經前、睡不好、壓力荷爾蒙高時，就長在這些好發處。但不能說下巴痘代表腸胃不好。"},{"time":"15:08","seconds":908,"text":"含糖飲料、裹糖衣的花生配酒，會提高IGF-1（類胰島素生長因子-1），刺激毛囊分泌更多油脂而堵塞。"},{"time":"15:25","seconds":925,"text":"臨床上最難控制的痘痘：體重過重、脖子後面有黑色棘皮症、整個下巴都是痘，一定跟高胰島素血症和IGF-1有關。"},{"time":"16:19","seconds":979,"text":"囊腫型青春痘：再怎麼早睡、洗臉、忌口還是會長，通常13歲就開始長大顆囊腫，這一定要看醫生。"},{"time":"17:03","seconds":1023,"text":"同年齡有人看起來比較年輕，關鍵是膚色均勻；色斑越多越顯老，而這來自從小到大的習慣。"},{"time":"17:34","seconds":1054,"text":"40歲開始長斑，是20歲時大量曝曬的結果，年輕時修復力好所以看不出來；日曬還會剪斷膠原蛋白，讓皮膚變薄。"},{"time":"17:55","seconds":1075,"text":"70歲的皮膚科老教授看起來像50歲，靠的是「保護」（不曬太陽）而不是保養，他可能連保養品都不擦。"},{"time":"18:31","seconds":1111,"text":"看陽光可以，但臉不要曬到，背曬沒關係；室內燈光也建議防，早上刷完牙洗完臉，第一件事就是擦防曬，室內也要擦。"},{"time":"19:00","seconds":1140,"text":"防曬分兩種：物理性只有氧化鋅、二氧化鈦兩種成分，把光反射掉；化學性是吸收後轉成熱能。看成分就知道是哪一種，SPF只代表擋紫外線的程度。"},{"time":"19:47","seconds":1187,"text":"挑防曬像買內褲，自己用得喜歡就好，不必拘泥品牌或成分；最重要的是量要夠，一張臉約0.7到1克。"},{"time":"20:12","seconds":1212,"text":"快問快答：早上臉油一定要用洗面乳（肥皂也可以，只用水不行）；換枕頭套不能改善痘痘，但一週一定要換一次；油性肌不需要擦乳液，覺得乾時再擦。"},{"time":"20:39","seconds":1239,"text":"白頭痘可以擠，等同切開引流；怕的是不知收手一直摳表皮，反而留下色素沉澱。洗臉用約40度、接近體溫的水，冷水收毛孔是洗腦說法。"},{"time":"20:58","seconds":1258,"text":"「臉越油越缺水」是超級大迷思，臉油是荷爾蒙不平衡；治痘先戒糖跟奶；全部保養步驟只能留一個，就留防曬。"}],"keyPoints":[{"title":"1. 痘痘是皮脂腺與荷爾蒙的長期抗戰，洗臉只是基本","items":["四個成因：細菌、角質代謝異常、皮脂腺、荷爾蒙；只殺菌或只洗臉都不夠。","皮脂腺從12歲開始發育，隨年紀變大、出油變多，約50歲才停。","復發是因為周圍有摸不到的微小粉刺連鎖發炎，要整片治療；表面痘消了，皮脂腺還在出油。","T字部位（下巴、鼻子、眉心）皮脂腺最多，荷爾蒙波動時最先長；「下巴痘代表腸胃不好」沒有根據。","糖、奶、裹糖花生配酒會提高IGF-1；高胰島素血症的人痘痘最難控制。治痘先戒糖跟奶。","早睡等嚴格作息能改善一般的三五顆痘痘；囊腫型青春痘（常13歲起）再怎麼忌口都會長，一定要看醫生。"]},{"title":"2. A酸是有證據的「長生不老藥」，紅癢脫皮是適應期而非過敏","items":["A醇是保養品，濃度低、要轉成A酸才能作用；A酸是藥品，只有皮膚科醫師能開。","嚴重痘痘、斑點、要拿掉皺紋，A酸才做得到，A醇做不到。","A酸去角質所以治痘，在真皮刺激膠原蛋白所以細紋變平，皮膚是變厚而不是變薄。","適應期的紅癢脫皮會一次比一次輕；過敏則是一次比一次嚴重，這是最大差別。","口服A酸是X級，計畫懷孕要提前半年停；外擦濃度低，但懷孕後也建議停用。"]},{"title":"3. 防曬是最重要的抗老基本功，要像刷牙一樣天天做","items":["看起來年輕的關鍵是膚色均勻；斑點多就顯老。","40歲長的斑是20歲曬出來的；日曬也會剪斷膠原蛋白讓皮膚變薄。","70歲看起來像50歲的老教授靠「保護」不曬太陽，不是靠保養品。","早上刷牙洗臉完就擦防曬，室內也要擦；臉不要曬，背曬沒關係。","物理性（氧化鋅、二氧化鈦）反射光線，化學性吸收後轉成熱能；SPF只代表擋紫外線的程度。","選自己用得喜歡的即可，重點是量要夠：一張臉約0.7到1克。"]},{"title":"4. 破解保養迷思：油是荷爾蒙決定的，擦什麼都改變不了","items":["洗臉不會越洗越油：80%的人是油性肌，早上摸鼻翼有油就該洗，洗完繃繃的很正常。","皮脂分泌看荷爾蒙，荷爾蒙看作息，跟擦什麼無關，沒有真正控油的保養品。","臉越油不代表越缺水，這是超級大迷思；油性肌不需要乳液，覺得乾時再擦。","選保養品看有文獻的成分（A酸A醇；美白看麴酸、熊果素、傳明酸、菸鹼醯胺），別信吹得很神的萃取物。","洗法：早晚各一次，乾性肌30秒，油性肌洗兩次各1分鐘；用約40度溫水，熱水開毛孔、冷水收毛孔是洗腦。","早上一定要用洗面乳（肥皂可，清水不行）；白頭痘可以擠，但別一直摳免得留色素沉澱；枕頭套一週換一次，但不能治痘。"]}]}
+    </script>
+    <script>
+      // 單檔版: config 從內嵌 JSON 讀出, 畫面由下方 inline 的 youtube-sync.js render
+      // (library 單一出處在 doc-report/public/docs/dist/youtube-view/, build 時內嵌)
+      window.YOUTUBE_SYNC_CONFIG = JSON.parse(document.getElementById("spec").textContent);
+    </script>
+    <script>
+(function () {
+  var SPLIT_STORAGE_KEY = "youtube-sync-subtitle-width-v2";
+  var CC_STORAGE_KEY = "youtube-sync-cc-overlay-v1";
+
+  // YT IFrame player 參數預設值; spec 可用 playerVars 覆寫個別項目
+  // 註: modestbranding 已被 YouTube 廢除 (2023), 傳了也沒作用, 故不再設定
+  var DEFAULT_PLAYER_VARS = {
+    autoplay: 0,
+    controls: 1,
+    rel: 0,               // 結束畫面推薦限制在同頻道 (YouTube 已無法完全關閉)
+    playsinline: 1,
+    start: 0,
+    hl: "zh-TW",          // 播放器介面語言
+    cc_load_policy: 1,    // 預設開啟原生字幕 (原文)
+    iv_load_policy: 3     // 關掉浮動註解
+    // 註: 刻意不設 cc_lang_pref, 讓原生 CC 維持影片原文;
+    //     繁中由 spec.subtitles + 自製 overlay 疊在上面 (要改再從 spec.playerVars 覆寫)
+  };
+
+  function buildPlayerVars(overrides) {
+    var result = {};
+    Object.keys(DEFAULT_PLAYER_VARS).forEach(function (key) {
+      result[key] = DEFAULT_PLAYER_VARS[key];
+    });
+    if (overrides && typeof overrides === "object") {
+      Object.keys(overrides).forEach(function (key) {
+        result[key] = overrides[key];
+      });
+    }
+    return result;
+  }
+
+  function renderAppShell(root) {
+    root.innerHTML = [
+      "<section class='hero'>",
+      "  <div class='panel video-panel'>",
+      "    <div class='video-frame'>",
+      "      <div id='player'></div>",
+      "      <div class='cc-overlay' data-role='cc-overlay' hidden><span class='cc-overlay-text' data-role='cc-overlay-text'></span></div>",
+      "    </div>",
+      "    <div class='video-toolbar' data-role='video-toolbar' hidden>",
+      "      <button type='button' class='cc-toggle' data-role='cc-toggle' aria-pressed='true'>繁中字幕</button>",
+      "    </div>",
+      "  </div>",
+      "  <button type='button' class='splitter' data-role='splitter' aria-label='調整影片與字幕寬度' aria-orientation='vertical' aria-valuemin='20' aria-valuemax='45' aria-valuenow='34'>",
+      "    <span class='splitter-line' aria-hidden='true'></span>",
+      "    <span class='splitter-badge' data-role='splitter-status'>影片 66% | 字幕 34%</span>",
+      "  </button>",
+      "  <aside class='panel subtitle-panel'>",
+      "    <div class='timeline-list' data-role='timeline'></div>",
+      "  </aside>",
+      "</section>",
+      "<section class='content-grid'>",
+      "  <aside class='sidebar'>",
+      "    <section class='panel section'>",
+      "      <h2>文章標籤</h2>",
+      "      <div class='tag-list' data-role='tags'></div>",
+      "    </section>",
+      "    <section class='panel section'>",
+      "      <h2>重點論述</h2>",
+      "      <div data-role='key-points'></div>",
+      "    </section>",
+      "  </aside>",
+      "</section>",
+      "<section class='panel hero-copy'>",
+      "  <h1 data-role='title'></h1>",
+      "  <p class='summary' data-role='summary'></p>",
+      "  <div class='meta-list'>",
+      "    <div class='meta-item'>",
+      "      <span class='meta-label'>更新日期</span>",
+      "      <span class='meta-value' data-role='updated-at'></span>",
+      "    </div>",
+      "    <div class='meta-item'>",
+      "      <span class='meta-label'>影片來源</span>",
+      "      <a class='meta-value' data-role='source-link' target='_blank' rel='noreferrer'></a>",
+      "    </div>",
+      "  </div>",
+      "</section>"
+    ].join("");
+  }
+
+  function renderTimeline(root, items) {
+    const timeline = root.querySelector("[data-role='timeline']");
+    const buttons = [];
+
+    items.forEach(function (item, index) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "timeline-item";
+      button.dataset.index = String(index);
+      button.dataset.seconds = String(item.seconds);
+      button.innerHTML = [
+        "<span class='timeline-time'>" + item.time + "</span>",
+        "<p class='timeline-text'>" + item.text + "</p>"
+      ].join("");
+      timeline.appendChild(button);
+      buttons.push(button);
+    });
+
+    return buttons;
+  }
+
+  function renderKeyPoints(root, sections) {
+    const container = root.querySelector("[data-role='key-points']");
+
+    sections.forEach(function (section) {
+      const article = document.createElement("article");
+      article.innerHTML = "<h3>" + section.title + "</h3>";
+      const list = document.createElement("ul");
+
+      section.items.forEach(function (item) {
+        const listItem = document.createElement("li");
+        listItem.textContent = item;
+        list.appendChild(listItem);
+      });
+
+      article.appendChild(list);
+      container.appendChild(article);
+    });
+  }
+
+  function renderTags(root, tags) {
+    const container = root.querySelector("[data-role='tags']");
+    tags.forEach(function (tag) {
+      const span = document.createElement("span");
+      span.className = "tag";
+      span.textContent = tag;
+      container.appendChild(span);
+    });
+  }
+
+  function keepActiveLineInView(container, activeButton) {
+    if (!container || !activeButton) {
+      return;
+    }
+
+    const itemTop = activeButton.offsetTop;
+    const itemBottom = itemTop + activeButton.offsetHeight;
+    const viewTop = container.scrollTop;
+    const viewBottom = viewTop + container.clientHeight;
+    const padding = 24;
+    const preferredTopOffset = Math.max(72, Math.min(140, container.clientHeight * 0.22));
+    const desiredTop = Math.max(0, itemTop - preferredTopOffset);
+    const desiredBottom = desiredTop + container.clientHeight;
+
+    if (itemTop < viewTop + preferredTopOffset - padding) {
+      container.scrollTo({ top: desiredTop, behavior: "smooth" });
+      return;
+    }
+
+    if (itemBottom > viewBottom - padding || itemBottom > desiredBottom) {
+      container.scrollTo({ top: desiredTop, behavior: "smooth" });
+    }
+  }
+
+  function setActive(buttons, currentSeconds, options) {
+    const settings = options || {};
+    let activeIndex = 0;
+
+    for (let index = 0; index < buttons.length; index += 1) {
+      const itemSeconds = Number(buttons[index].dataset.seconds);
+      const nextSeconds = index + 1 < buttons.length ? Number(buttons[index + 1].dataset.seconds) : Number.POSITIVE_INFINITY;
+      if (currentSeconds >= itemSeconds && currentSeconds < nextSeconds) {
+        activeIndex = index;
+        break;
+      }
+      if (currentSeconds >= itemSeconds) {
+        activeIndex = index;
+      }
+    }
+
+    buttons.forEach(function (button, index) {
+      const isActive = index === activeIndex;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-current", isActive ? "true" : "false");
+    });
+
+    const activeButton = buttons[activeIndex];
+    if (settings.keepInView && activeButton) {
+      keepActiveLineInView(settings.keepInView, activeButton);
+    }
+  }
+
+  function loadYoutubeApi(onReady) {
+    if (window.YT && typeof window.YT.Player === "function") {
+      onReady();
+      return;
+    }
+
+    const previous = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () {
+      if (typeof previous === "function") {
+        previous();
+      }
+      onReady();
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    document.head.appendChild(script);
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  // 把 spec.subtitles 正規化成排序好的 cue; 資料不合法就整條丟掉 (寧可少顯示也不要錯位)
+  function normalizeCues(rawCues) {
+    if (!Array.isArray(rawCues)) {
+      return [];
+    }
+
+    return rawCues
+      .filter(function (cue) {
+        return cue
+          && typeof cue.start === "number" && Number.isFinite(cue.start)
+          && typeof cue.end === "number" && Number.isFinite(cue.end)
+          && cue.end > cue.start
+          && typeof cue.zh === "string" && cue.zh !== "";
+      })
+      .map(function (cue) {
+        return { start: cue.start, end: cue.end, zh: cue.zh };
+      })
+      .sort(function (a, b) {
+        return a.start - b.start;
+      });
+  }
+
+  // 二分搜尋: 回傳 currentTime 落在哪一條 cue, 落在空隙回 -1
+  function findCueIndex(cues, currentTime) {
+    var low = 0;
+    var high = cues.length - 1;
+
+    while (low <= high) {
+      var mid = (low + high) >> 1;
+      if (currentTime < cues[mid].start) {
+        high = mid - 1;
+      } else if (currentTime >= cues[mid].end) {
+        low = mid + 1;
+      } else {
+        return mid;
+      }
+    }
+
+    return -1;
+  }
+
+  function setupCcOverlay(root, cues) {
+    var overlay = root.querySelector("[data-role='cc-overlay']");
+    var text = root.querySelector("[data-role='cc-overlay-text']");
+    var toolbar = root.querySelector("[data-role='video-toolbar']");
+    var toggle = root.querySelector("[data-role='cc-toggle']");
+    var enabled = true;
+    var lastIndex = -2;
+
+    // 沒有繁中字幕資料就完全不出現 toggle, 只留 YouTube 原生字幕
+    if (!overlay || !toggle || !toolbar || cues.length === 0) {
+      return { update: function () {} };
+    }
+
+    try {
+      enabled = window.localStorage.getItem(CC_STORAGE_KEY) !== "off";
+    } catch (error) {
+      enabled = true;
+    }
+
+    function apply() {
+      toggle.setAttribute("aria-pressed", enabled ? "true" : "false");
+      overlay.hidden = !enabled;
+      if (!enabled) {
+        text.innerHTML = "";
+        lastIndex = -2;
+      }
+    }
+
+    toolbar.hidden = false;
+    apply();
+
+    toggle.addEventListener("click", function () {
+      enabled = !enabled;
+      try {
+        window.localStorage.setItem(CC_STORAGE_KEY, enabled ? "on" : "off");
+      } catch (error) {
+      }
+      apply();
+    });
+
+    return {
+      update: function (currentTime) {
+        if (!enabled) {
+          return;
+        }
+
+        var index = findCueIndex(cues, currentTime);
+        if (index === lastIndex) {
+          return;
+        }
+
+        lastIndex = index;
+        // zh 為自產內容, 沿用 timeline 同樣的 innerHTML render;
+        // 內含 <span class="learn"> 標出該句刻意保留的英文學習字
+        text.innerHTML = index === -1 ? "" : cues[index].zh;
+      }
+    };
+  }
+
+  function setupSplitter(root) {
+    var hero = root.querySelector(".hero");
+    var splitter = root.querySelector("[data-role='splitter']");
+    var badge = root.querySelector("[data-role='splitter-status']");
+
+    if (!hero || !splitter || !badge) {
+      return;
+    }
+
+    function bounds() {
+      var heroWidth = hero.clientWidth;
+      return {
+        min: Math.max(260, Math.round(heroWidth * 0.22)),
+        max: Math.max(320, Math.round(heroWidth * 0.42))
+      };
+    }
+
+    function updateBadge(subtitleWidth) {
+      var gap = 24;
+      var total = hero.clientWidth - gap - splitter.offsetWidth;
+      var safeTotal = total > 0 ? total : hero.clientWidth;
+      var subtitlePercent = Math.round((subtitleWidth / safeTotal) * 100);
+      var videoPercent = 100 - subtitlePercent;
+      badge.textContent = "影片 " + videoPercent + "% | 字幕 " + subtitlePercent + "%";
+      splitter.setAttribute("aria-valuenow", String(subtitlePercent));
+      splitter.setAttribute("aria-valuetext", badge.textContent);
+    }
+
+    function applyWidth(rawWidth) {
+      var limit = bounds();
+      var subtitleWidth = clamp(Math.round(rawWidth), limit.min, limit.max);
+      root.style.setProperty("--subtitle-width", subtitleWidth + "px");
+      updateBadge(subtitleWidth);
+      try {
+        window.localStorage.setItem(SPLIT_STORAGE_KEY, String(subtitleWidth));
+      } catch (error) {
+      }
+    }
+
+    function currentWidth() {
+      var value = window.getComputedStyle(root).getPropertyValue("--subtitle-width").trim();
+      return Number.parseFloat(value) || Math.round(hero.clientWidth * 0.34);
+    }
+
+    function restoreWidth() {
+      var storedWidth;
+      try {
+        storedWidth = Number.parseFloat(window.localStorage.getItem(SPLIT_STORAGE_KEY) || "");
+      } catch (error) {
+        storedWidth = NaN;
+      }
+
+      applyWidth(Number.isFinite(storedWidth) ? storedWidth : currentWidth());
+    }
+
+    function pointerMove(event) {
+      var heroRect = hero.getBoundingClientRect();
+      var nextWidth = heroRect.right - event.clientX;
+      applyWidth(nextWidth);
+    }
+
+    function pointerUp() {
+      splitter.classList.remove("is-dragging");
+      window.removeEventListener("pointermove", pointerMove);
+      window.removeEventListener("pointerup", pointerUp);
+    }
+
+    splitter.addEventListener("pointerdown", function (event) {
+      if (window.matchMedia("(max-width: 480px)").matches) {
+        return;
+      }
+
+      event.preventDefault();
+      splitter.classList.add("is-dragging");
+      splitter.setPointerCapture(event.pointerId);
+      window.addEventListener("pointermove", pointerMove);
+      window.addEventListener("pointerup", pointerUp);
+    });
+
+    splitter.addEventListener("keydown", function (event) {
+      var step = event.shiftKey ? 24 : 12;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+        return;
+      }
+
+      event.preventDefault();
+      applyWidth(currentWidth() + (event.key === "ArrowLeft" ? step : -step));
+    });
+
+    window.addEventListener("resize", restoreWidth);
+    restoreWidth();
+  }
+
+  function bootstrap() {
+    const config = window.YOUTUBE_SYNC_CONFIG;
+    if (!config) {
+      return;
+    }
+
+    const root = document.querySelector("[data-youtube-sync-app]");
+    if (!root) {
+      return;
+    }
+
+    renderAppShell(root);
+
+    document.title = config.title;
+    root.querySelector("[data-role='title']").textContent = config.title;
+    root.querySelector("[data-role='summary']").textContent = config.summary;
+    root.querySelector("[data-role='updated-at']").textContent = config.updatedAt;
+    root.querySelector("[data-role='source-link']").href = config.videoUrl;
+    root.querySelector("[data-role='source-link']").textContent = config.videoUrl;
+    setupSplitter(root);
+
+    renderTags(root, config.tags);
+    renderKeyPoints(root, config.keyPoints);
+    const buttons = renderTimeline(root, config.timeline);
+    const timeline = root.querySelector("[data-role='timeline']");
+    const ccOverlay = setupCcOverlay(root, normalizeCues(config.subtitles));
+
+    let player;
+    let rafId = 0;
+    let lastActiveSecond = -1;
+
+    function syncTimeline() {
+      if (!player || typeof player.getCurrentTime !== "function") {
+        rafId = window.requestAnimationFrame(syncTimeline);
+        return;
+      }
+
+      const state = typeof player.getPlayerState === "function" ? player.getPlayerState() : -1;
+      if (state === window.YT.PlayerState.PLAYING || state === window.YT.PlayerState.PAUSED || state === window.YT.PlayerState.BUFFERING) {
+        const currentTime = player.getCurrentTime();
+        // 字幕要次秒精度, timeline 高亮維持整秒節流
+        ccOverlay.update(currentTime);
+
+        const currentSeconds = Math.floor(currentTime);
+        if (currentSeconds !== lastActiveSecond) {
+          lastActiveSecond = currentSeconds;
+          setActive(buttons, currentSeconds, { keepInView: timeline });
+        }
+      }
+
+      rafId = window.requestAnimationFrame(syncTimeline);
+    }
+
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        const seconds = Number(button.dataset.seconds);
+        if (player && typeof player.seekTo === "function") {
+          player.seekTo(seconds, true);
+          player.playVideo();
+          setActive(buttons, seconds, { keepInView: timeline });
+        }
+      });
+    });
+
+    loadYoutubeApi(function () {
+      player = new window.YT.Player("player", {
+        videoId: config.videoId,
+        playerVars: buildPlayerVars(config.playerVars),
+        events: {
+          onReady: function () {
+            setActive(buttons, 0, { keepInView: timeline });
+            if (!rafId) {
+              rafId = window.requestAnimationFrame(syncTimeline);
+            }
+          }
+        }
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", bootstrap);
+})();
+    </script>
+  </body>
+</html>
