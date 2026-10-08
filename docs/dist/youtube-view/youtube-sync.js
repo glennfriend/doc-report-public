@@ -1,6 +1,20 @@
 (function () {
   var SPLIT_STORAGE_KEY = "youtube-sync-subtitle-width-v2";
   var CC_STORAGE_KEY = "youtube-sync-cc-overlay-v1";
+  var SKIP_SECONDS = 10;
+  var ARROW_SKIP_SECONDS = 5;
+  var VOLUME_STEP = 5;
+  var FALLBACK_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+  // 自製控制列圖示 (YouTube 新版 embed 只剩進度列/全螢幕, 沒有音量/速度, 所以控制列自己做)
+  var ICONS = {
+    play: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M8 5v14l11-7z'/></svg>",
+    pause: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M6 5h4v14H6zM14 5h4v14h-4z'/></svg>",
+    volume: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z'/></svg>",
+    muted: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M3 9v6h4l5 5V4L7 9H3zm13.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z'/></svg>",
+    fullscreen: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M5 5h5v2H7v3H5zm9 0h5v5h-2V7h-3zM5 14h2v3h3v2H5zm12 0h2v5h-5v-2h3z'/></svg>",
+    exitFullscreen: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M8 5h2v5H5V8h3zm6 0h2v3h3v2h-5zM5 14h5v5H8v-3H5zm9 0h5v2h-3v3h-2z'/></svg>"
+  };
 
   // YT IFrame player 參數預設值; spec 可用 playerVars 覆寫個別項目
   // 註: modestbranding 已被 YouTube 廢除 (2023), 傳了也沒作用, 故不再設定
@@ -38,8 +52,20 @@
       "      <div id='player'></div>",
       "      <div class='cc-overlay' data-role='cc-overlay' hidden><span class='cc-overlay-text' data-role='cc-overlay-text'></span></div>",
       "    </div>",
-      "    <div class='video-toolbar' data-role='video-toolbar' hidden>",
-      "      <button type='button' class='cc-toggle' data-role='cc-toggle' aria-pressed='true'>繁中字幕</button>",
+      "    <div class='video-toolbar' data-role='video-toolbar'>",
+      "      <div class='vc-group'>",
+      "        <button type='button' class='vc-btn' data-role='vc-play' aria-label='播放 (K)' title='播放 (K)'>" + ICONS.play + "</button>",
+      "        <button type='button' class='vc-btn vc-skip' data-role='vc-back' aria-label='倒退 10 秒 (J)' title='倒退 10 秒 (J)'>-10s</button>",
+      "        <button type='button' class='vc-btn vc-skip' data-role='vc-forward' aria-label='快轉 10 秒 (L)' title='快轉 10 秒 (L)'>+10s</button>",
+      "        <button type='button' class='vc-btn' data-role='vc-mute' aria-label='靜音 (M)' title='靜音 (M)'>" + ICONS.volume + "</button>",
+      "        <input type='range' class='vc-volume' data-role='vc-volume' min='0' max='100' step='1' value='100' aria-label='音量'>",
+      "        <span class='vc-volume-value' data-role='vc-volume-value'>100</span>",
+      "      </div>",
+      "      <div class='vc-group'>",
+      "        <select class='vc-rate' data-role='vc-rate' aria-label='播放速度' title='播放速度 (&lt; &gt;)'></select>",
+      "        <button type='button' class='cc-toggle' data-role='cc-toggle' aria-pressed='true' hidden>繁中字幕</button>",
+      "        <button type='button' class='vc-btn' data-role='vc-fullscreen' aria-label='全螢幕 (F)' title='全螢幕 (F)'>" + ICONS.fullscreen + "</button>",
+      "      </div>",
       "    </div>",
       "  </div>",
       "  <button type='button' class='splitter' data-role='splitter' aria-label='調整影片與字幕寬度' aria-orientation='vertical' aria-valuemin='20' aria-valuemax='45' aria-valuenow='34'>",
@@ -249,13 +275,12 @@
   function setupCcOverlay(root, cues) {
     var overlay = root.querySelector("[data-role='cc-overlay']");
     var text = root.querySelector("[data-role='cc-overlay-text']");
-    var toolbar = root.querySelector("[data-role='video-toolbar']");
     var toggle = root.querySelector("[data-role='cc-toggle']");
     var enabled = true;
     var lastIndex = -2;
 
     // 沒有繁中字幕資料就完全不出現 toggle, 只留 YouTube 原生字幕
-    if (!overlay || !toggle || !toolbar || cues.length === 0) {
+    if (!overlay || !toggle || cues.length === 0) {
       return { update: function () {} };
     }
 
@@ -274,7 +299,7 @@
       }
     }
 
-    toolbar.hidden = false;
+    toggle.hidden = false;
     apply();
 
     toggle.addEventListener("click", function () {
@@ -398,6 +423,225 @@
     restoreWidth();
   }
 
+  function isPlayingState(state) {
+    return state === window.YT.PlayerState.PLAYING || state === window.YT.PlayerState.BUFFERING;
+  }
+
+  function formatRate(rate) {
+    return rate === 1 ? "正常" : rate + "x";
+  }
+
+  // 自製控制列: 播放/暫停, ±10 秒, 靜音, 音量, 速度, 全螢幕, 鍵盤快捷鍵 (仿 youtube.com)
+  // getPlayer() 在 player 還沒 ready 前回 null, 這時所有操作直接略過
+  function setupPlayerControls(root, getPlayer) {
+    var panel = root.querySelector(".video-panel");
+    var playButton = root.querySelector("[data-role='vc-play']");
+    var backButton = root.querySelector("[data-role='vc-back']");
+    var forwardButton = root.querySelector("[data-role='vc-forward']");
+    var muteButton = root.querySelector("[data-role='vc-mute']");
+    var volumeInput = root.querySelector("[data-role='vc-volume']");
+    var volumeValue = root.querySelector("[data-role='vc-volume-value']");
+    var rateSelect = root.querySelector("[data-role='vc-rate']");
+    var fullscreenButton = root.querySelector("[data-role='vc-fullscreen']");
+
+    function setLabel(button, label, icon) {
+      button.innerHTML = icon;
+      button.setAttribute("aria-label", label);
+      button.title = label;
+    }
+
+    function syncPlayState(state) {
+      var playing = isPlayingState(state);
+      setLabel(playButton, playing ? "暫停 (K)" : "播放 (K)", playing ? ICONS.pause : ICONS.play);
+    }
+
+    function syncVolume() {
+      var player = getPlayer();
+      if (!player) {
+        return;
+      }
+      var muted = player.isMuted();
+      var volume = player.getVolume();
+      volumeInput.value = String(muted ? 0 : volume);
+      volumeValue.textContent = muted ? "0" : String(volume);
+      setLabel(muteButton, muted ? "取消靜音 (M)" : "靜音 (M)", muted || volume === 0 ? ICONS.muted : ICONS.volume);
+    }
+
+    function syncRate() {
+      var player = getPlayer();
+      if (!player) {
+        return;
+      }
+      rateSelect.value = String(player.getPlaybackRate());
+    }
+
+    function fillRates() {
+      var player = getPlayer();
+      var rates = player && player.getAvailablePlaybackRates();
+      if (!Array.isArray(rates) || rates.length === 0) {
+        rates = FALLBACK_RATES;
+      }
+      rateSelect.innerHTML = "";
+      rates.forEach(function (rate) {
+        var option = document.createElement("option");
+        option.value = String(rate);
+        option.textContent = formatRate(rate);
+        rateSelect.appendChild(option);
+      });
+      syncRate();
+    }
+
+    function togglePlay() {
+      var player = getPlayer();
+      if (!player) {
+        return;
+      }
+      if (isPlayingState(player.getPlayerState())) {
+        player.pauseVideo();
+      } else {
+        player.playVideo();
+      }
+    }
+
+    function skip(delta) {
+      var player = getPlayer();
+      if (!player) {
+        return;
+      }
+      var duration = player.getDuration() || Number.POSITIVE_INFINITY;
+      player.seekTo(clamp(player.getCurrentTime() + delta, 0, duration), true);
+    }
+
+    function toggleMute() {
+      var player = getPlayer();
+      if (!player) {
+        return;
+      }
+      if (player.isMuted()) {
+        player.unMute();
+        if (player.getVolume() === 0) {
+          player.setVolume(VOLUME_STEP * 4);
+        }
+      } else {
+        player.mute();
+      }
+      // YT API 的 mute/unMute 是非同步送進 iframe, 稍後再讀回實際狀態
+      window.setTimeout(syncVolume, 150);
+    }
+
+    function setVolume(volume) {
+      var player = getPlayer();
+      if (!player) {
+        return;
+      }
+      var next = clamp(Math.round(volume), 0, 100);
+      player.setVolume(next);
+      if (next > 0 && player.isMuted()) {
+        player.unMute();
+      }
+      volumeInput.value = String(next);
+      volumeValue.textContent = String(next);
+      setLabel(muteButton, "靜音 (M)", next === 0 ? ICONS.muted : ICONS.volume);
+    }
+
+    function stepRate(direction) {
+      var options = Array.prototype.map.call(rateSelect.options, function (option) {
+        return Number(option.value);
+      });
+      var index = options.indexOf(Number(rateSelect.value));
+      var next = options[clamp(index + direction, 0, options.length - 1)];
+      var player = getPlayer();
+      if (player && next !== undefined) {
+        player.setPlaybackRate(next);
+        rateSelect.value = String(next);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (panel.requestFullscreen) {
+        // 整個 video-panel 進全螢幕, 繁中字幕 overlay 與控制列都跟著進去
+        panel.requestFullscreen();
+      }
+    }
+
+    playButton.addEventListener("click", togglePlay);
+    backButton.addEventListener("click", function () { skip(-SKIP_SECONDS); });
+    forwardButton.addEventListener("click", function () { skip(SKIP_SECONDS); });
+    muteButton.addEventListener("click", toggleMute);
+    volumeInput.addEventListener("input", function () { setVolume(Number(volumeInput.value)); });
+    rateSelect.addEventListener("change", function () {
+      var player = getPlayer();
+      if (player) {
+        player.setPlaybackRate(Number(rateSelect.value));
+      }
+    });
+    fullscreenButton.addEventListener("click", toggleFullscreen);
+    document.addEventListener("fullscreenchange", function () {
+      var active = document.fullscreenElement === panel;
+      setLabel(fullscreenButton, active ? "離開全螢幕 (F)" : "全螢幕 (F)", active ? ICONS.exitFullscreen : ICONS.fullscreen);
+    });
+
+    // 鍵盤快捷鍵 (焦點在 iframe 內時由 YouTube 自己處理); 輸入元件與已被處理過的按鍵 (如 splitter 方向鍵) 不攔
+    document.addEventListener("keydown", function (event) {
+      var target = event.target;
+      var tag = target && target.tagName;
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || (target && target.isContentEditable)) {
+        return;
+      }
+
+      var key = event.key;
+      var handled = true;
+      if (key === " " && tag === "BUTTON") {
+        return;
+      }
+      if (key === " " || key === "k" || key === "K") {
+        togglePlay();
+      } else if (key === "j" || key === "J") {
+        skip(-SKIP_SECONDS);
+      } else if (key === "l" || key === "L") {
+        skip(SKIP_SECONDS);
+      } else if (key === "ArrowLeft") {
+        skip(-ARROW_SKIP_SECONDS);
+      } else if (key === "ArrowRight") {
+        skip(ARROW_SKIP_SECONDS);
+      } else if (key === "ArrowUp") {
+        setVolume(Number(volumeInput.value) + VOLUME_STEP);
+      } else if (key === "ArrowDown") {
+        setVolume(Number(volumeInput.value) - VOLUME_STEP);
+      } else if (key === "m" || key === "M") {
+        toggleMute();
+      } else if (key === "f" || key === "F") {
+        toggleFullscreen();
+      } else if (key === "<" || key === ",") {
+        stepRate(-1);
+      } else if (key === ">" || key === ".") {
+        stepRate(1);
+      } else {
+        handled = false;
+      }
+
+      if (handled) {
+        event.preventDefault();
+      }
+    });
+
+    fillRates();
+
+    return {
+      onReady: function () {
+        fillRates();
+        syncVolume();
+      },
+      onStateChange: syncPlayState,
+      onRateChange: syncRate
+    };
+  }
+
   function bootstrap() {
     const config = window.YOUTUBE_SYNC_CONFIG;
     if (!config) {
@@ -426,8 +670,12 @@
     const ccOverlay = setupCcOverlay(root, normalizeCues(config.subtitles));
 
     let player;
+    let playerReady = false;
     let rafId = 0;
     let lastActiveSecond = -1;
+    const controls = setupPlayerControls(root, function () {
+      return playerReady ? player : null;
+    });
 
     function syncTimeline() {
       if (!player || typeof player.getCurrentTime !== "function") {
@@ -454,11 +702,21 @@
     buttons.forEach(function (button) {
       button.addEventListener("click", function () {
         const seconds = Number(button.dataset.seconds);
-        if (player && typeof player.seekTo === "function") {
-          player.seekTo(seconds, true);
-          player.playVideo();
-          setActive(buttons, seconds, { keepInView: timeline });
+        if (!playerReady) {
+          return;
         }
+
+        // 點時間軸只跳時間, 播放狀態維持原樣: 播放中繼續播, 停著就停在新位置
+        const state = player.getPlayerState();
+        if (isPlayingState(state) || state === window.YT.PlayerState.PAUSED) {
+          // 官方行為: 播放中 seekTo 會繼續播, 暫停中 seekTo 會維持暫停
+          player.seekTo(seconds, true);
+        } else {
+          // 還沒開始 / cued / 已結束: seekTo 會自動開播, 改用 cue 停在新位置等使用者按播放
+          player.cueVideoById({ videoId: config.videoId, startSeconds: seconds });
+        }
+        lastActiveSecond = seconds;
+        setActive(buttons, seconds, { keepInView: timeline });
       });
     });
 
@@ -468,10 +726,18 @@
         playerVars: buildPlayerVars(config.playerVars),
         events: {
           onReady: function () {
+            playerReady = true;
+            controls.onReady();
             setActive(buttons, 0, { keepInView: timeline });
             if (!rafId) {
               rafId = window.requestAnimationFrame(syncTimeline);
             }
+          },
+          onStateChange: function (event) {
+            controls.onStateChange(event.data);
+          },
+          onPlaybackRateChange: function () {
+            controls.onRateChange();
           }
         }
       });

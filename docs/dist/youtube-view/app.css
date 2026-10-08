@@ -180,14 +180,95 @@ body::before {
 
 .video-toolbar {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
   background: #1f1712;
+  color: #fffaf2;
 }
 
 .video-toolbar[hidden] {
   display: none;
+}
+
+/* 自製控制列 (YouTube 新版 embed 沒有音量/速度控制) */
+.vc-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #fffaf2;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.vc-btn:hover,
+.vc-btn:focus-visible {
+  background: rgba(255, 250, 242, 0.14);
+}
+
+.vc-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.vc-volume {
+  width: 96px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.vc-volume-value {
+  min-width: 2.5em;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 250, 242, 0.7);
+}
+
+.vc-rate {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 250, 242, 0.28);
+  border-radius: 999px;
+  background: #1f1712;
+  color: #fffaf2;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cc-toggle[hidden] {
+  display: none;
+}
+
+/* 全螢幕時整個 video-panel 進去: 影片佔滿, 控制列與繁中字幕 overlay 留在畫面上 */
+.video-panel:fullscreen {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  background: #000;
+}
+
+.video-panel:fullscreen .video-frame {
+  flex: 1;
+  aspect-ratio: auto;
 }
 
 .cc-toggle {
